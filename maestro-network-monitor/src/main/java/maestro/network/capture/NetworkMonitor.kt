@@ -74,13 +74,11 @@ object NetworkMonitorFactory {
     }
     
     private fun createIOSMonitor(flowName: String): NetworkMonitor {
-        // Will be implemented in platform-specific module
-        throw NotImplementedError("iOS network monitoring not yet implemented")
+        return maestro.network.platform.ios.IOSNetworkMonitor(flowName)
     }
     
     private fun createAndroidMonitor(flowName: String): NetworkMonitor {
-        // Will be implemented in platform-specific module
-        throw NotImplementedError("Android network monitoring not yet implemented")
+        return maestro.network.platform.android.AndroidNetworkMonitor(flowName)
     }
 }
 
