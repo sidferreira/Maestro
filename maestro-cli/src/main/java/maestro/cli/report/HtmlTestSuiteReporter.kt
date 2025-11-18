@@ -13,6 +13,14 @@ class HtmlTestSuiteReporter : TestSuiteReporter {
         bufferedOut.writeUtf8(htmlContent)
         bufferedOut.close()
     }
+    
+    private fun formatBytes(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+            else -> "${bytes / (1024 * 1024)} MB"
+        }
+    }
 
     private fun buildHtmlReport(summary: TestExecutionSummary): String {
 
@@ -110,6 +118,114 @@ class HtmlTestSuiteReporter : TestSuiteReporter {
                                                 if (flow.failure != null) {
                                                     p(classes = "card-text text-danger") {
                                                         +flow.failure.message
+                                                    }
+                                                }
+                                                // Network monitoring section
+                                                if (flow.networkSession != null) {
+                                                    hr {}
+                                                    h6(classes = "mt-3") { +"Network Monitoring Data" }
+                                                    div(classes = "card mb-2") {
+                                                        div(classes = "card-body") {
+                                                            div(classes = "row") {
+                                                                div(classes = "col-md-3") {
+                                                                    small(classes = "text-muted") { +"Total Requests" }
+                                                                    div { +"${flow.networkSession.totalRequests}" }
+                                                                }
+                                                                div(classes = "col-md-3") {
+                                                                    small(classes = "text-muted") { +"Successful" }
+                                                                    div(classes = "text-success") { 
+                                                                        +"${flow.networkSession.successfulRequests}" 
+                                                                    }
+                                                                }
+                                                                div(classes = "col-md-3") {
+                                                                    small(classes = "text-muted") { +"Failed" }
+                                                                    div(classes = "text-danger") { 
+                                                                        +"${flow.networkSession.failedRequests}" 
+                                                                    }
+                                                                }
+                                                                div(classes = "col-md-3") {
+                                                                    small(classes = "text-muted") { +"Avg Duration" }
+                                                                    div { 
+                                                                        +"${flow.networkSession.averageDuration ?: "-"}ms" 
+                                                                    }
+                                                                }
+                                                            }
+                                                            div(classes = "row mt-3") {
+                                                                div(classes = "col-md-4") {
+                                                                    small(classes = "text-muted") { +"Bytes Sent" }
+                                                                    div { +"${formatBytes(flow.networkSession.totalBytesSent)}" }
+                                                                }
+                                                                div(classes = "col-md-4") {
+                                                                    small(classes = "text-muted") { +"Bytes Received" }
+                                                                    div { +"${formatBytes(flow.networkSession.totalBytesReceived)}" }
+                                                                }
+                                                                div(classes = "col-md-4") {
+                                                                    small(classes = "text-muted") { +"Unique Domains" }
+                                                                    div { +"${flow.networkSession.uniqueDomains}" }
+                                                                }
+                                                            }
+                                                            if (flow.networkSession.domains.isNotEmpty()) {
+                                                                div(classes = "mt-3") {
+                                                                    small(classes = "text-muted") { +"Domains:" }
+                                                                    div { 
+                                                                        flow.networkSession.domains.forEach { domain ->
+                                                                            span(classes = "badge bg-secondary me-1") { 
+                                                                                +domain 
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    // Network events table
+                                                    if (flow.networkSession.events.isNotEmpty()) {
+                                                        div(classes = "mt-3") {
+                                                            h6 { +"Network Requests" }
+                                                            div(classes = "table-responsive") {
+                                                                table(classes = "table table-sm table-striped") {
+                                                                    thead {
+                                                                        tr {
+                                                                            th { +"Method" }
+                                                                            th { +"URL" }
+                                                                            th { +"Status" }
+                                                                            th { +"Duration" }
+                                                                            th { +"Size" }
+                                                                        }
+                                                                    }
+                                                                    tbody {
+                                                                        flow.networkSession.events.take(20).forEach { event ->
+                                                                            tr {
+                                                                                td { +"${event.method ?: "-"}" }
+                                                                                td { 
+                                                                                    small { +event.url } 
+                                                                                }
+                                                                                td { 
+                                                                                    val statusClass = when {
+                                                                                        event.statusCode == null -> ""
+                                                                                        event.statusCode in 200..299 -> "text-success"
+                                                                                        event.statusCode in 400..599 -> "text-danger"
+                                                                                        else -> "text-warning"
+                                                                                    }
+                                                                                    span(classes = statusClass) {
+                                                                                        +"${event.statusCode ?: "-"}"
+                                                                                    }
+                                                                                }
+                                                                                td { +"${event.duration ?: "-"}ms" }
+                                                                                td { 
+                                                                                    +"${formatBytes(event.bytesReceived)}" 
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            if (flow.networkSession.events.size > 20) {
+                                                                small(classes = "text-muted") { 
+                                                                    +"Showing 20 of ${flow.networkSession.events.size} requests" 
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
